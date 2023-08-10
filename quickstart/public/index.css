@@ -84,3 +84,66 @@ div.participant.main::before {
     height: 270px;
   }
 }
+
+#Chat{
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.chat-box {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.message {
+  margin: 5px 0;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.received {
+  background-color: #e0f2f1;
+}
+
+.sent {
+  background-color: #f5f5f5;
+  text-align: right;
+}
+
+.input-box {
+  margin-top: 10px;
+}
+
+input[type="text"] {
+  width: 70%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+}
+
+button {
+  padding: 8px 15px;
+  border: none;
+  background-color: #007bff;
+  color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+
+
+
+
+

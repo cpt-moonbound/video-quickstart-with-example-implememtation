@@ -223,6 +223,7 @@ function trackPublished(publication, participant) {
  */
 async function joinRoom(token, connectOptions) {
   // Comment the next two lines to disable verbose logging.
+  //console.log('In join room function!!');
   const logger = Logger.getLogger('twilio-video');
   logger.setLevel('debug');
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
     <link rel="stylesheet" href="index.css" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" integrity="sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu" crossorigin="anonymous">
   </head>
   <body>
     <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
@@ -26,12 +27,40 @@
     </nav>
     <div class="container-fluid">
       <div class="row" id="room">
-        <div id="participants" class="col-xs-12 col-sm-3 col-md-2" style="text-align: center"></div>
-        <div id="active-participant" class="col-xs-12 col-sm-9 col-md-10" style="text-align: center">
+        <div id="participants" class="col-xs-12 col-sm-3 col-md-2" style="text-align: center;width:25%"></div>
+        <div id="active-participant" class="col-xs-12 col-sm-9 col-md-10">
           <div class="participant main">
             <video autoplay playsinline muted></video>
           </div>
         </div>
+        <div id="Chat" style="z-index: 10;width: 300px; height: 300px; position: absolute; bottom:0%; right: 0%;">
+            <!-- <form action="">
+              <label for="fname">First name:</label><br>
+
+            </form> -->
+            <div class="chat-box">
+              <div class="message received">Hello there!</div>
+              <div class="message sent">Hi! How can I help you?</div>
+              <!-- Add more messages here -->
+          </div>
+          <div class="input-box">
+            <form action="">
+              <input type="text" placeholder="Type your message...">
+              <button type="submit">Send</button>
+            </form>  
+          </div>
+        </div>
+      </div>
+      <div id="media-controls">
+        <button id = "audioBtn" class = "btn-prop">Mute
+          <span>
+            &nbsp;<i id="activeIcon" class="fas fa-volume-up "></i>
+          </span>
+          <span>
+            <i id="inactiveIcon" class="fas fa-volume-mute"></i>
+          </span>
+        </button>
+        <button id = "videoBtn" class = "btn-prop">Stop Video</button>
       </div>
       <div id="modals">
         <div class="modal fade" id="select-mic" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="select-mic-label" aria-hidden="true">
@@ -115,6 +144,7 @@
         </div>
       </div>
     </div>
+    <script src="https://sdk.twilio.com/js/video/releases/2.15.2/twilio-video.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
     <script src="index.js"></script>
