@@ -1,6 +1,6 @@
 'use strict';
 
-const { connect, createLocalVideoTrack, Logger } = require('twilio-video');
+const { connect, createLocalVideoTrack, Logger, LocalDataTrack } = require('twilio-video');
 const { isMobile } = require('./browser');
 
 const $leave = $('#leave-room');
@@ -8,6 +8,14 @@ const $room = $('#room');
 const $activeParticipant = $('div#active-participant > div.participant.main', $room);
 const $activeVideo = $('video', $activeParticipant);
 const $participants = $('div#participants', $room);
+
+const muteUnmuteController = require('./muteUnmutecontroller');
+const ChatDataTrackController = require('./sendAndReceiveController');
+const SnapShotController = require('./SnapshotController');
+
+const chatDataTrack = new LocalDataTrack({
+  name: 'chat',
+});
 
 // The current active Participant in the Room.
 let activeParticipant = null;
@@ -122,6 +130,9 @@ function setVideoPriority(participant, priority) {
  */
 function attachTrack(track, participant) {
   // Attach the Participant's Track to the thumbnail.
+  if(track.kind === "data")
+    return;
+  
   const $media = $(`div#${participant.sid} > ${track.kind}`, $participants);
   $media.css('opacity', '');
   track.attach($media.get(0));
@@ -141,6 +152,8 @@ function attachTrack(track, participant) {
  */
 function detachTrack(track, participant) {
   // Detach the Participant's Track from the thumbnail.
+  if(track.kind === "data")
+    return;
   const $media = $(`div#${participant.sid} > ${track.kind}`, $participants);
   const mediaEl = $media.get(0);
   $media.css('opacity', '0');
@@ -175,6 +188,8 @@ function participantConnected(participant, room) {
   participant.on('trackPublished', publication => {
     trackPublished(publication, participant);
   });
+
+  appendText(`${participant.identity} has connected`);
 }
 
 /**
@@ -221,17 +236,26 @@ function trackPublished(publication, participant) {
  * @param token - the AccessToken used to join a Room
  * @param connectOptions - the ConnectOptions used to join a Room
  */
+var roomP1;
 async function joinRoom(token, connectOptions) {
   // Comment the next two lines to disable verbose logging.
   //console.log('In join room function!!');
-  const logger = Logger.getLogger('twilio-video');
-  logger.setLevel('debug');
+  // const logger = Logger.getLogger('twilio-video');
+  // logger.setLevel('debug');
 
   // Join to the Room with the given AccessToken and ConnectOptions.
   const room = await connect(token, connectOptions);
-
+  roomP1 = room;
   // Save the LocalVideoTrack.
   let localVideoTrack = Array.from(room.localParticipant.videoTracks.values())[0].track;
+
+  //publishing the DataTrack for chat
+  try{
+    var publishRes = await room.localParticipant.publishTrack(chatDataTrack);
+    console.log("Data Track published!!", publishRes);
+  }catch(err){
+    console.log("Failed to publish the data track",err);
+  }
 
   // Make the Room available in the JavaScript console for debugging.
   window.room = room;
@@ -247,13 +271,19 @@ async function joinRoom(token, connectOptions) {
   // Subscribe to the media published by RemoteParticipants joining the Room later.
   room.on('participantConnected', participant => {
     participantConnected(participant, room);
+    displayState(participant,"Connected");
   });
 
   // Handle a disconnected RemoteParticipant.
   room.on('participantDisconnected', participant => {
     participantDisconnected(participant, room);
+    displayState(participant,"Disconnected");
+    console.log(`Disconnected here :${participant}`);
   });
 
+  // Setting the Reconnect Events 
+  ReconnectStatusUpdate(room);
+  
   // Set the current active Participant.
   setCurrentActiveParticipant(room);
 
@@ -337,6 +367,180 @@ async function joinRoom(token, connectOptions) {
       }
     });
   });
+
+
 }
 
+// Implementing Mute and Unmute Audio/Video here (example-1)
+const muteAudioBtn = document.getElementById("audioBtn");
+const muteVideoBtn = document.getElementById("videoBtn")
+muteAudioBtn.onclick = () => {
+  const mute = !muteAudioBtn.classList.contains('muted');
+
+  if(mute) {
+    muteUnmuteController.muteYourAudio(roomP1);
+    muteAudioBtn.classList.add('muted');
+    muteAudioBtn.innerHTML = `Enable Audio &nbsp; <i class="fas fa-volume-up "></i>`
+  } else {
+    muteUnmuteController.unmuteYourAudio(roomP1);
+    muteAudioBtn.classList.remove('muted');
+    
+    muteAudioBtn.innerHTML = `Disable Audio &nbsp; <i class="fas fa-volume-mute"></i>`
+  }
+}
+
+muteVideoBtn.onclick = async () => {
+
+  const mute = !muteVideoBtn.classList.contains('muted');
+  let SnapBtn = document.getElementById("SnapBtn");
+
+  if(mute) {
+    muteUnmuteController.muteYourVideo(roomP1);
+    muteVideoBtn.classList.add('muted');
+    SnapBtn.disabled = true;
+
+    //roomP1.localParticipant.tracks.forEach(track => detachTrack(track,roomP1.localParticipant));
+    muteVideoBtn.innerText = 'Enable Video';
+  } else {
+    muteUnmuteController.unmuteYourVideo(roomP1);
+    muteVideoBtn.classList.remove('muted');
+    SnapBtn.disabled = false;
+    //await roomP1.localParticipant.tracks.forEach(track => attachTrack(track,roomP1.localParticipant));
+    muteVideoBtn.innerText = 'Disable Video';
+  }
+}
+
+// Disconnect from the Room
+window.onbeforeunload = () => {
+  roomP1.disconnect();
+  roomP2.disconnect();
+  roomName = null;
+}
+
+// End
+
+
+// Implementing example-2 chat box
+
+const MsgSender = document.getElementById("msg-send");
+const MsgInput = document.getElementById("input-msg");
+const ChatForm = document.getElementById("chat-form");
+const ChatBox = document.getElementById("chat-box");
+//
+let localDataTrack = null;
+
+MsgSender.addEventListener('click',MsgSubmit);
+
+function createMessages(message,direction){
+
+  const dElement = document.createElement('div');
+  dElement.className = 'message';
+
+  console.log(direction === 'sent');
+  dElement.classList.add(direction);
+  dElement.innerText = `${message}`;
+
+  return dElement;
+  //div class="message received">Hello there!</div>
+}
+
+function appendText(text) {
+  //var chatIdentity = roomP1.localParticipant.identity;
+  ChatBox.appendChild(createMessages(text,'received'));
+  ChatBox.scrollTop = ChatBox.scrollHeight;
+}
+
+function MsgSubmit(event) {
+  event.preventDefault();
+
+  var chatIdentity = roomP1.localParticipant.identity;
+  const msg = `${chatIdentity} : ${MsgInput.value}`;
+  ChatForm.reset();
+  ChatBox.appendChild(createMessages(msg,'sent'));
+  console.log(`${chatIdentity} has sent a message ${msg}`)
+  ChatDataTrackController.sendChatMessage(chatDataTrack, msg);
+  ChatBox.scrollTop = ChatBox.scrollHeight;
+
+  ChatDataTrackController.receiveChatMessages(roomP1, appendText);      // this is the problem
+}
+
+// End
+
+// Example - 3, Snapshot implementation
+
+const SnapBtn = document.getElementById("SnapBtn");
+var canvas = document.querySelector('.snapshot-canvas');
+var img = document.querySelector('.snapshot-img');
+var video = document.querySelector('video#videoinputpreview');
+var localVideoTrack;
+var el;
+
+window.onload = () => {
+
+  el = window.ImageCapture ? img : canvas;
+  //el.classList.remove('hidden');
+
+  el.width = "1280"
+  //localVideoTrack.dimensions.width;
+  el.height = "720"
+  //localVideoTrack.dimensions.height;
+}
+SnapBtn.onclick = () => {
+
+  if(!muteVideoBtn.classList.contains("muted")){
+  let localVideoTrack = Array.from(room.localParticipant.videoTracks.values())[0].track;
+  SnapShotController.takeLocalVideoSnapshot(video,localVideoTrack,el);
+  }else{
+    console.log("Video is stopped. Enable to take a screenshot!");
+    setTimeout(function(){
+      window.alert = "";
+  }, 3000);
+  }
+
+}
+
+// End
+
+// Example - 4 , Reconnection Handler
+
+// Funciton to display change of state in UI
+function displayState(participant,state){
+
+  let containerDiv = document.getElementsByClassName('container-fluid')[0];
+ //let storeContainerDiv = containerDiv;
+  //let statusPara = document.getElementsByClassName('state-color')[0];
+
+  //if(!statusPara){
+    let statusPara = document.createElement('p');
+    statusPara.className = 'state-color';
+    statusPara.innerText = `${participant.identity} ${state}`;
+    containerDiv.prepend(statusPara);
+  //}
+  
+  // else{
+  //   statusPara.innerText = `${participant.identity} ${state}`;
+  // }
+
+  setTimeout(()=>{
+    statusPara.remove();  
+  },3000);
+}
+
+// Function to Update the Reconnecting state trigger of a participant, called on line 283
+function ReconnectStatusUpdate(roomP1){
+  roomP1.on('participantReconnecting', participant => {
+    assert.equals(participant.state, 'connected');
+    console.log(`${participant.identity} is reconnecting the signaling connection to the Room!`);
+    displayState(participant,"Reconnecting");
+    /* Update the RemoteParticipant UI here */
+  });
+
+  roomP1.on('participantReconnected', participant => {
+    assert.equals(participant.state, 'connected');
+    console.log(`${participant.identity} has reconnected the signaling connection to the Room!`);
+    displayState(participant,"Reconnected");
+    /* Update the RemoteParticipant UI here */
+  });
+}
+// End
 module.exports = joinRoom;

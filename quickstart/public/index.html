@@ -34,19 +34,16 @@
           </div>
         </div>
         <div id="Chat" style="z-index: 10;width: 300px; height: 300px; position: absolute; bottom:0%; right: 0%;">
-            <!-- <form action="">
-              <label for="fname">First name:</label><br>
 
-            </form> -->
-            <div class="chat-box">
-              <div class="message received">Hello there!</div>
-              <div class="message sent">Hi! How can I help you?</div>
+            <div class="chat-box" id = "chat-box">
+              <!-- <div class="message received">Hello there!</div>
+              <div class="message sent">Hi! How can I help you?</div> -->
               <!-- Add more messages here -->
           </div>
           <div class="input-box">
-            <form action="">
-              <input type="text" placeholder="Type your message...">
-              <button type="submit">Send</button>
+            <form name="chat-send" action="" id="chat-form">
+              <input type="text" placeholder="Type your message..." id = "input-msg">
+              <button type="submit" id="msg-send">Send</button>
             </form>  
           </div>
         </div>
@@ -54,13 +51,21 @@
       <div id="media-controls">
         <button id = "audioBtn" class = "btn-prop">Mute
           <span>
-            &nbsp;<i id="activeIcon" class="fas fa-volume-up "></i>
+            &nbsp;<i class="fas fa-volume-up "></i>
           </span>
-          <span>
+          <!-- <span>
             <i id="inactiveIcon" class="fas fa-volume-mute"></i>
-          </span>
+          </span> -->
         </button>
         <button id = "videoBtn" class = "btn-prop">Stop Video</button>
+      </div>
+      <div class="card">
+        <div class="card-block">
+          <h4 class="card-title">Snapshot</h4>
+          <button type="submit" id="SnapBtn"> Take Snapshot</button>
+          <canvas class="snapshot-canvas hidden" width="0" height="0"></canvas>
+          <img class="snapshot-img hidden" width="0" height="0">
+        </div>
       </div>
       <div id="modals">
         <div class="modal fade" id="select-mic" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="select-mic-label" aria-hidden="true">
